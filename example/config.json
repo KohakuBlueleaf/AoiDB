@@ -1,0 +1,18 @@
+[
+	{
+		"database_option": {
+			"name": "example",
+			"path": "database/example.aoi"
+		},
+		"IP": "127.0.0.1",
+		"Port": 33333
+	},
+	{
+		"database_option": {
+			"name": "example2",
+			"path": "database/example2.aoi"
+		},
+		"IP": "127.0.0.1",
+		"Port": 44444
+	}
+]

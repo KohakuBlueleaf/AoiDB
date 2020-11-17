@@ -2,13 +2,13 @@ import os,sys
 import pickle
 from time import time
 from copy import copy,deepcopy
-from BpTree import BpTree
-from Functions import *
+from ._bp_tree import BpTree
+from ._functions import *
 
 sys.setrecursionlimit(10000000)
 
-	
-class AoiPy:
+
+class AoiDB:
 	class Data:
 		"""
 		DB中的Data物件，儲存資料的最小單位
@@ -34,16 +34,31 @@ class AoiPy:
 		
 		__repr__ = __str__
 		
+		def copy(self,node):
+			self.temp = node.temp
+			self.data = node.data
+
+		def __len__(self):
+			return len(self.data)
+
 		def __iter__(self):
 			for i in self.data:
 				yield i
 		
 		def items(self):
-			for key,value in self.data.items():
-				yield key,value
-				
+			return self.data.items()
+		
+		def keys(self):
+			return self.data.keys()
+
+		def values(self):
+			return self.data.values()
+
 		def __getitem__(self, key:str):
 			return self.data.get(key,None)
+
+		def __delitem__(self, key):
+			del self.data[key]
 			
 		def __setitem__(self, key:str, value):
 			if key not in self.data: 
@@ -54,10 +69,9 @@ class AoiPy:
 	
 	class DataSet:
 		"""
-		DataSet物件 當DB須回傳多筆資料時使用此物件儲存
+		DataSet物件 當db須回傳多筆資料時使用此物件儲存
 		"""
-		def __init__(self, DB, data):
-			self.DB = DB
+		def __init__(self, data):
 			self.data = data
 		
 		def __str__(self):
@@ -73,18 +87,15 @@ class AoiPy:
 		
 		def __iter__(self):
 			for i in self.data:
-				yield data
+				yield i
 		
 		def __len__(self):
 			return len(self.data)
 		
 		def __add__(self, other):
-			return AoiPy.DataSet(self.DB, self.data + other.data)
-			
-		def save_change(self):
-			for data in self.data:
-				self.DB.save_change(data)
-	
+			return AoiDB.DataSet(self.data + other.data)
+
+
 	def __init__(self, name=''):
 		self.name = name
 		self.path = ''
@@ -95,6 +106,7 @@ class AoiPy:
 		self.type = {}
 		self.index = {}
 		self.cmp = {}
+		self.command_list = []
 		
 		self.id_list = BpTree(12)
 		self.idmax = 0
@@ -104,7 +116,7 @@ class AoiPy:
 			yield i
 	
 	def show(self, sort_by=''):
-		out = f'BlueData_{self.name }:\n'
+		out = f'AoiDB_{self.name }:\n'
 		length = len(self.column)
 		spliter = '\n├──────────'+'┼──────────'*length+'┤\n│'
 		out += '┌──────────'+'┬──────────'*length+'┐\n│'
@@ -150,9 +162,11 @@ class AoiPy:
 		return id in self.id_list
 	
 	def save(self,path='', abs_path=False):
-		if not abs_path:
-			path = './'+path
-			path += '.aoi'
+		if path=='' and self.path=='':
+			path = self.name
+
+		if path[-4:]!='.aoi':
+			path+='.aoi'
 			
 		all_data = (self.name, self.type, self.all_data, self.column, self.index, self.id_list, self.idmax)
 		with open(path if path else self.path, 'wb') as f:
@@ -169,33 +183,33 @@ class AoiPy:
 		for i in self.all_data:
 			i.temp = deepcopy(i.data)
 	
-	
+
 	def get_by_id(self, id):
-		return self.id_list[target]
+		return self.id_list[id]
 	
 	def get_e(self, key, target):
 		if key in self.index:
-			return self.DataSet(self, [self.index[key][target]])
+			return self.DataSet(self.index[key].get(target,[]))
 		else:
-			return self.DataSet(self, [i for i in self.all_data if i[key]==target])
+			return self.DataSet([i for i in self.all_data if i[key]==target])
 	
 	def get_l(self, key, target):
-		return self.DataSet(self,[i for i in self.all_data if i[key]<target])
+		return self.DataSet([i for i in self.all_data if i[key]<target])
 	
 	def get_g(self, key, target):
-		return self.DataSet(self, [i for i in self.all_data if i[key]>target])
+		return self.DataSet([i for i in self.all_data if i[key]>target])
 	
 	def get(self, key:str, target,mode='='):
 		if key=='id':
 			return self.get_by_id(target)
 		elif mode=='=':
-			return self.get_eq(key, target)
+			return self.get_e(key, target)
 		elif mode=='<':
-			return self.get_lower(key, target)
+			return self.get_l(key, target)
 		elif mode=='>':
-			return self.get_greater(key, target)
+			return self.get_g(key, target)
 			
-	
+
 	def add_data(self, **kwargs):
 		new = self.Data(self.idmax)
 		
@@ -211,14 +225,20 @@ class AoiPy:
 				new.data[i] = self.type[i]()
 				
 			if i in self.index:
-				self.index[i][new.data[i]] = self.index[i].get(new.data[i],[]).append(new)
+				if new.data[i] in self.index[i]:
+					self.index[i][new.data[i]].append(new)
+				else:
+					self.index[i][new.data[i]] = [new]
 		
 		new.temp = deepcopy(new.data)
 		
 		return new
 	
-	
 	def delete(self, node:Data):
+		data = self.id_list[node.id]
+		data.copy(node)
+		node = data
+
 		self.all_data.remove(node)
 		
 		for key,tree in self.index.items():
@@ -227,56 +247,34 @@ class AoiPy:
 		self.id_list[node.id] = None
 	
 	def delete_by_value(self, key:str, value, mode='='):
-		res = self.get(key, value, mode, index=(key in self.index))
+		res = self.get(key, value, mode)
 		for i in res:
 			self.delete(i)
 	
-		
-	def change_value(self, key, value, mode='=', **kwargs):
-		res = self.get(key, value, mode, True)
-		
-		for target in res:
-			for key,value in kwargs.items():
-				before = deepcopy(target[key])
-				target[key] = value
-				
-				if key in self.index:
-					self.index[key][before].remove(target)
-					if value in self.index[key]:
-						self.index[key][value].append(target)
-					else:
-						self.index[key][value] = [target]
-				
-	def save_change(self, node:Data):
-		for key in self.column:
-			if self.type[key] != type(node[key]):
-				raise TypeError(f"{key} should be {self.type[key]}")
-				
-		for key in self.index:
-			if node.temp[key] != node[key]:
-				if node.temp == self.type[key]():
-					continue
-					
-				self.index[key][node.temp[key]].remove(node)
-				
-				value = node[key]
+	def change_value(self, id, **kwargs):
+		target = self.id_list[id]
+		for key,value in kwargs.items():
+			before = deepcopy(target[key])
+			target[key] = value
+			
+			if key in self.index:
+				self.index[key][before].remove(target)
 				if value in self.index[key]:
-					self.index[key][value].append(node)
+					self.index[key][value].append(target)
 				else:
-					self.index[key][value] = [node]
-				
-			node.temp[key] = node[key]
-	
+					self.index[key][value] = [target]
+		self.command_list.append([id,kwargs])
 
 	def col(self):
 		return list(self.type.keys())
 
 	def add_col(self, col, data_type):
-		self.type[col] = type(data_type)
-		self.column.append(col)
-		
-		for i in self.all_data:
-			i.data[col] = type(data_type)()
+		if col not in self.type:
+			self.type[col] = type(data_type)
+			self.column.append(col)
+			
+			for i in self.all_data:
+				i.data[col] = type(data_type)()
 	
 	def del_col(self, col):
 		del self.type[col]
