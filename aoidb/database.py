@@ -230,7 +230,7 @@ class AoiDB:
 				else:
 					self.index[i][new.data[i]] = [new]
 		
-		new.temp = deepcopy(new.data)
+			new.temp[i] = new.data[i]
 		
 		return new
 	
