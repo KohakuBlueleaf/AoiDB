@@ -5,7 +5,7 @@ from distutils.core import setup
 if sys.platform=='win32':
 	package_path = 'Lib/site-packages/'
 else:
-	package_path = 'site-packages/'
+	package_path = '/usr/local/lib/python3.6/site-packages/'
 
 all_files = {}
 data_files = []
