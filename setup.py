@@ -1,36 +1,22 @@
-import os
+import os,sys
 from os import listdir
 from distutils.core import setup
 
+if sys.platform=='win32':
+	package_path = 'Lib/site-packages/'
+else:
+	package_path = 'site-packages/'
 
-package_path = 'Lib/site-packages/aoidb/template'
 all_files = {}
 data_files = []
 queue = []
 
-try:
-	path = 'aoidb/template/'
-	Dataset = listdir(path)
-	for i in Dataset:
-		queue.append((path,i))
-
-	while queue:
-		path,now = queue.pop(0)
-		this = '{}/{}'.format(path,now)
-		if os.path.isdir(this):
-			for i in listdir(this):
-				queue.append((this,i))
-		else:
-			target_dir = package_path+path[15:]
-			
-			if target_dir not in all_files:
-				all_files[target_dir]=[]
-			all_files[target_dir].append(this)
-
-	for i in all_files:
-		data_files.append((i,all_files[i]))
-except:
-	pass
+path = 'aoidb/template/'
+for path, dirs, files in os.walk(path):
+	if files:
+		files = [path+'/'+file for file in files]
+		print((package_path+path, files))
+		data_files.append((package_path+path, files))
 
 setup(
 	name = 'aoidb',

@@ -1,3 +1,4 @@
+import os,sys
 from json import load,dumps
 from subprocess import Popen
 
@@ -8,7 +9,9 @@ p_list = []
 for config in configs:
 	config_str = dumps(config,ensure_ascii=False)
 	config_str = config_str.replace('"',"'")
-	p_list.append(Popen(['python','runner.py',config_str]))
+
+	python = 'python' if sys.platform=='win32' else 'python3'
+	p_list.append(Popen([python,'runner.py',config_str]))
 
 try:
 	input()
