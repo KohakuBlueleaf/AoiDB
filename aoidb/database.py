@@ -236,7 +236,6 @@ class AoiDB:
 	
 	def delete(self, node:Data):
 		data = self.id_list[node.id]
-		data.copy(node)
 		node = data
 
 		self.all_data.remove(node)
@@ -254,11 +253,11 @@ class AoiDB:
 	def change_value(self, id, **kwargs):
 		target = self.id_list[id]
 		for key,value in kwargs.items():
-			before = deepcopy(target[key])
-			target[key] = value
-			
 			if key in self.index:
-				self.index[key][before].remove(target)
+				self.index[key][target[key]].remove(target)
+			target[key] = value
+
+			if key in self.index:
 				if value in self.index[key]:
 					self.index[key][value].append(target)
 				else:
