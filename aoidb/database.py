@@ -45,6 +45,9 @@ class AoiDB:
 			for i in self.data:
 				yield i
 		
+		def __hash__(self):
+			return hash(f'AoiDB_Data_{self.id}')
+
 		def items(self):
 			return self.data.items()
 		
@@ -72,7 +75,7 @@ class AoiDB:
 		DataSet物件 當db須回傳多筆資料時使用此物件儲存
 		"""
 		def __init__(self, data):
-			self.data = data
+			self.data = list(data)
 		
 		def __str__(self):
 			out = 'DataSet('
@@ -180,34 +183,68 @@ class AoiDB:
 			all_data = pickle.load(f)
 		
 		self.name, self.type, self.all_data, self.column, self.index, self.id_list, self.idmax = all_data
-		for i in self.all_data:
-			i.temp = deepcopy(i.data)
+		for i in range(len(self.all_data)):
+			now = self.all_data[i]
+			if hash(now)!=hash(f'AoiDB_Data_{now.id}'):
+				new = self.Data(now.id)
+				for key,value in now.data.items():
+					new.data[key] = value
 	
 
 	def get_by_id(self, id):
 		return self.id_list[id]
 	
-	def get_e(self, key, target):
-		if key in self.index:
-			return self.DataSet(self.index[key].get(target,[]))
+	def get_e(self, **kwargs):
+		final = None
+		for key,target in kwargs.items():
+			if key in self.index:
+				now = set(self.index[key].get(target,[]))
+			else:
+				now = set([i for i in self.all_data if i[key]==target])
+			if not final:
+				final = now
+			else:
+				final &= now
+		
+		return self.DataSet(final)
+	
+	def get_l(self, **kwargs):
+		final = None
+		for key,target in kwargs.items():
+			now = set([i for i in self.all_data if i[key]<target])
+			if not final:
+				final = now
+			else:
+				final &= now
+		return self.DataSet(final)
+	
+	def get_g(self, **kwargs):
+		final = None
+		for key,target in kwargs.items():
+			now = set([i for i in self.all_data if i[key]>target])
+			if not final:
+				final = now
+			else:
+				final &= now
+		return self.DataSet(final)
+	
+	def get(self, **kwargs):
+		if 'mode' in kwargs:
+			mode = kwargs['mode']
+			del kwargs['mode']
 		else:
-			return self.DataSet([i for i in self.all_data if i[key]==target])
-	
-	def get_l(self, key, target):
-		return self.DataSet([i for i in self.all_data if i[key]<target])
-	
-	def get_g(self, key, target):
-		return self.DataSet([i for i in self.all_data if i[key]>target])
-	
-	def get(self, key:str, target,mode='='):
-		if key=='id':
-			return self.get_by_id(target)
+			mode = '='
+		
+		if 'id' in kwargs:
+			return self.get_by_id(kwargs['id'])
 		elif mode=='=':
-			return self.get_e(key, target)
+			return self.get_e(**kwargs)
 		elif mode=='<':
-			return self.get_l(key, target)
+			return self.get_l(**kwargs)
 		elif mode=='>':
-			return self.get_g(key, target)
+			return self.get_g(**kwargs)
+		else:
+			raise AttributeError('\'mode\' should be "=", "<", or ">"')
 			
 
 	def add_data(self, **kwargs):

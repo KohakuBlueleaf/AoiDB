@@ -1,0 +1,17 @@
+README.md
+setup.py
+aoi_database.egg-info/PKG-INFO
+aoi_database.egg-info/SOURCES.txt
+aoi_database.egg-info/dependency_links.txt
+aoi_database.egg-info/entry_points.txt
+aoi_database.egg-info/not-zip-safe
+aoi_database.egg-info/top_level.txt
+aoidb/__init__.py
+aoidb/__main__.py
+aoidb/_bp_tree.py
+aoidb/_client_functions.py
+aoidb/_functions.py
+aoidb/_server_functions.py
+aoidb/client.py
+aoidb/database.py
+aoidb/server.py

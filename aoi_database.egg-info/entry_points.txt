@@ -1,0 +1,3 @@
+[console_scripts]
+aoidb = aoidb.__main__:main
+

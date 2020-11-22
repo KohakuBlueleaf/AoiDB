@@ -2,7 +2,7 @@ import os,sys
 import shutil
 
 from argparse import ArgumentParser
-from .database import AoiDB
+from aoidb.database import AoiDB
 from json import dump
 
 parser = ArgumentParser()
