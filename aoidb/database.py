@@ -172,7 +172,7 @@ class AoiDB:
 			path+='.aoi'
 			
 		all_data = (self.name, self.type, self.all_data, self.column, self.index, self.id_list, self.idmax)
-		with open(path if path else self.path, 'wb') as f:
+		with open(path if path!='.aoi' else self.path, 'wb') as f:
 			pickle.dump(all_data, f)
 	
 	def load(self, path):

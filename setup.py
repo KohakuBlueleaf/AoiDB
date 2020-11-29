@@ -1,7 +1,11 @@
 import os,sys
 import setuptools
 
+datafiles = []
+for path, dirs, files in os.walk('aoidb\\template'):
+	datafiles.append((path, [path+'/'+i for i in files]))
 
+print(datafiles)
 setuptools.setup(
 	name = 'aoi_database',
 	packages = ['aoidb'],
@@ -15,6 +19,7 @@ setuptools.setup(
 			'aoidb = aoidb.__main__: main',
 		]
 	},
+	data_files=datafiles,
 	include_package_data=True,
 	zip_safe = False,
 )

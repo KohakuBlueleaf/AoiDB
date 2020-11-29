@@ -1,4 +1,8 @@
 class BpTree:
+	'''
+	B+Tree Object
+	Can be used as a dict
+	'''
 	class Node:
 		"""
 		B+Tree node object
@@ -6,16 +10,18 @@ class BpTree:
 		def __init__(self, order=3, leaf=True):
 			self.order = order
 			self.leaf = leaf
+			
 			self.mid = order//2
 			self.mid_v = self.mid+1
 			self.keys = []
 			self.value = []
+
 			self.parent = None
 			self.next = None
 		
 		def add_value(self,key,value):
 			'''
-			新增資料至節點
+			add new data to this node
 			'''
 			length = len(self.keys)
 			
@@ -29,17 +35,17 @@ class BpTree:
 						self.value.insert(i,value)
 						break
 			
-			#如果長度達到上限就分裂
+			#split if meet the length limit
 			if length+1==self.order:
 				self.split()
 		
 		def add_Node(self,key,node):
 			'''
-			以節點為資料新增至節點
+			add new child node to this node
 			'''
 			length = len(self.keys)
 			
-			#大於往右放
+			#if key is biggest, put it to the right side
 			if key>self.keys[-1]:
 				self.keys.append(key)
 				self.value.append(node)
@@ -53,13 +59,13 @@ class BpTree:
 						self.value[i] = self.value[i+1]	
 						self.value[i+1] = node
 			
-			#如果長度達到上限就分裂
+			#split if meet the length limit
 			if length+1==self.order:
 				self.split()
 
 		def split(self):
 			'''
-			節點分裂生長
+			split and grow
 			'''
 			
 			#如果分裂的節點是葉節點
@@ -107,7 +113,7 @@ class BpTree:
 				if self.parent == None:
 					#如果沒有parent 就以中央的值為新的母節點的key 
 					#  before                    after
-					# 			                   2   <- self
+					#                              2   <- self
 					#  1 2 3  <- self    ->     1     3
 					# 0 1 2 3            ->   0  1  2   3
 					
@@ -130,10 +136,10 @@ class BpTree:
 				else:
 					#有parent的話也是一樣的分裂方法
 					#只是往上產生的新節點要給母節點做add_node
-					#          before                  after
-					# 			           add_node ->   2
-					# self ->  1 2 3    ->   self ->  1     3
-					#         0 1 2 3   ->          0  1  2   3
+					#          before                       after
+					#                        add_node ->      2
+					# self ->  1 2 3    ->       self ->   1      3
+					#         0 1 2 3   ->               0   1  2   3
 					
 					right = BpTree.Node(self.order, False)
 					
@@ -149,9 +155,7 @@ class BpTree:
 					
 					self.parent.add_Node(key,right)
 
-	"""
-	B+Tree object
-	"""
+
 	def __init__(self,order):
 		self.order = order
 		self.root = self.Node(order)
@@ -182,15 +186,15 @@ class BpTree:
 	
 	def __iter__(self):
 		'''
-		找到最小值之後往後迭代
+		go to the node at the left side's end
+		and iterate it to the right side
 		'''
 		now = self.root
 		
-		#往左找最小
 		while not now.leaf:
 			now = now.value[0]
 		
-		#開始迭代，利用yield產生genertor
+		#make a generator
 		while now:
 			for i in range(len(now.key)):
 				yield now.key[i]
@@ -199,7 +203,7 @@ class BpTree:
 	def __getitem__(self,key,p=False):
 		now = self.root
 		
-		#大於等於找右邊
+		#if bigger to the right side
 		while not now.leaf:
 			if key>=now.keys[-1]:
 				now = now.value[-1]
@@ -209,6 +213,7 @@ class BpTree:
 						now = now.value[i]
 						break
 		
+		#find the data in the target node
 		for i in range(len(now.keys)):
 			if now.keys[i]==key:
 				return now.value[i]
@@ -217,12 +222,11 @@ class BpTree:
 	
 	def __setitem__(self, key, value):
 		'''
-		如果現有的節點已經存有欲修改的key則直接修改
-		如果沒有就新增資料(add_value)
+		already has: change it
+		or: add node
 		'''
 		now = self.root
 		
-		#大於等於找右邊
 		while not now.leaf:
 			if key >= now.keys[-1]:
 				now = now.value[-1]
@@ -251,18 +255,17 @@ class BpTree:
 	
 	def size(self):
 		'''
-		求節點數量，直接使用BFS遍歷
+		caculate we have how many nodes
+		use BFS to search that
 		'''
 		res = 0
 		queue = [self.root]
 		
 		while queue:
 			now = queue.pop()
-			if now.leaf:
-				res += len(now.keys)
-			else:
+			res += len(now.keys)
+			if not now.leaf:
 				queue += now.value
-				res += len(now.keys)
 		
 		return res
 		

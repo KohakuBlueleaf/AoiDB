@@ -76,8 +76,8 @@ class DataBaseClient:
 		return recv_msg(self.client)
 	
 	@server_method
-	def get(self, key:str, target, mode='='):
-		self.send('get', [[key, target, mode], {}])
+	def get(self, **kwargs):
+		self.send('get', [[], kwargs])
 		return recv_msg(self.client)
 	
 	@server_method
