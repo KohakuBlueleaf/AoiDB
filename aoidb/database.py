@@ -185,10 +185,20 @@ class AoiDB:
 		self.name, self.type, self.all_data, self.column, self.index, self.id_list, self.idmax = all_data
 		for i in range(len(self.all_data)):
 			now = self.all_data[i]
+
+			#to fit new type of Data
 			if hash(now)!=hash(f'AoiDB_Data_{now.id}'):
 				new = self.Data(now.id)
 				for key,value in now.data.items():
 					new.data[key] = value
+			
+			#to fit new type of B+Tree
+			for col, bptree in self.index.items():
+				if not hasattr(bptree, 'delete'):
+					new_tree = BpTree(16)
+					for key, value in bptree.items():
+						new_tree[key] = value
+					self.index[col] = new_tree
 	
 
 	def get_by_id(self, id):
@@ -279,8 +289,10 @@ class AoiDB:
 		
 		for key,tree in self.index.items():
 			tree[node[key]].remove(node)
+			if tree[node[key]] == []:
+				tree.delete(node[key])
 		
-		self.id_list[node.id] = None
+		self.id_list.delete(node.id)
 	
 	def delete_by_value(self, key:str, value, mode='='):
 		res = self.get(key, value, mode)
