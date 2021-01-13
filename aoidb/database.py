@@ -2,7 +2,8 @@ import os,sys
 import pickle
 from time import time
 from copy import copy,deepcopy
-from ._bp_tree import BpTree
+from ._bp_tree import BpTree as bpt
+from .cy_bp_tree import BpTree
 from ._functions import *
 
 sys.setrecursionlimit(10000000)
@@ -15,7 +16,6 @@ class AoiDB:
     """
     def __init__(self, id:int):
       self.id = id
-      self.temp = {}  #儲存上一次的資料，在save_change的時用來判斷有沒有修改
       self.data = {}  #儲存資料
       
     def __str__(self):
@@ -35,7 +35,6 @@ class AoiDB:
     __repr__ = __str__
     
     def copy(self,node):
-      self.temp = node.temp
       self.data = node.data
 
     def __len__(self):
@@ -66,7 +65,6 @@ class AoiDB:
     def __setitem__(self, key:str, value):
       if key not in self.data: 
         raise KeyError('Key is not in data')
-      self.temp[key] = self.data[key]
       self.data[key] = value
     
   
@@ -111,7 +109,7 @@ class AoiDB:
     self.cmp = {}
     self.command_list = []
     
-    self.id_list = BpTree(12)
+    self.id_list = BpTree(16)
     self.idmax = 0
   
   def __iter__(self):
@@ -192,15 +190,16 @@ class AoiDB:
     
     self.name, self.type, self.all_data, self.column, self.index, self.id_list, self.idmax = all_data
     for data in self.all_data:
-      now = data
-
       #to fit new type of Data
-      if hash(now)!=hash(f'AoiDB_Data_{now.id}'):
+      now = data
+      if hasattr(now, 'item'):
+        new = AoiDB.Data(now.id)
+        new.data = now.data
+      elif hash(now)!=hash(f'AoiDB_Data_{now.id}'):
         new = self.Data(now.id)
-        for key,value in now.data.items():
-          new.data[key] = value
+        new.data = now.data
       
-    #to fit new type of B+Tree
+    #to fit new type of index
     if type(self.index)==dict:
       for col, bptree in self.index.items():
         if not hasattr(bptree, 'delete'):
@@ -215,6 +214,7 @@ class AoiDB:
         new_index = BpTree(16)
         for i in self.all_data:
           new_index[i[col]] = new_index.get(i[col], []).append(i.id)
+        self.index[col] = new_index
 
   def get_by_id(self, id):
     return self.id_list[id]
@@ -226,7 +226,7 @@ class AoiDB:
         now = set(self.id_list[i] for i in self.index[key].get(target,[]))
       else:
         now = set([i for i in self.all_data if i[key]==target])
-      if not final:
+      if final is None:
         final = now
       else:
         final &= now
@@ -291,15 +291,11 @@ class AoiDB:
           self.index[i][new.data[i]].append(new.id)
         else:
           self.index[i][new.data[i]] = [new.id]
-    
-      new.temp[i] = new.data[i]
-    
     return new
   
   def delete(self, node:Data):
+    node = self.id_list[node.id]
     self.all_data.remove(node)
-    data = self.id_list[node.id]
-    node = data
     
     for key,tree in self.index.items():
       tree[node[key]].remove(node.id)

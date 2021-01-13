@@ -94,11 +94,11 @@ cdef class Node:
         left.value, right.value = value[:mid], value[mid:]
         left.parent = right.parent = self
         
-        left.next = right          #建立linked關係
+        left.next = right               #建立linked關係
         
-        self.keys = [keys[mid]]  #新key
+        self.keys = [keys[mid]]         #新key
         self.value = [left, right]      #沒有parent所以自己為root 將分裂出的節點往下放
-        self.leaf = False          #解除leaf資格
+        self.leaf = False               #解除leaf資格
       
       else:
         # 有parent則要把新產生的節點做add_node
@@ -501,7 +501,7 @@ cdef class BpTree:
       now = now.next
 
   
-  def get(self,key,int default=0):
+  def get(self,key,default=0):
     '''
     getitem有預設值的版本
     '''

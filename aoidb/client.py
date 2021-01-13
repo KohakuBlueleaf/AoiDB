@@ -1,6 +1,4 @@
-import os,sys
 import socket
-import struct
 from time import time,perf_counter_ns
 from pickle import dumps,loads
 
@@ -81,7 +79,7 @@ class DataBaseClient:
     return recv_msg(self.client)
   
   @server_method
-  def add_data(self, *args, **kwargs):
+  def add_data(self, **kwargs):
     self.send('add_data', [[],kwargs])
     return recv_msg(self.client)
   
@@ -91,8 +89,8 @@ class DataBaseClient:
     return recv_msg(self.client)
 
   @server_method
-  def delete_by_value(self, key:str, value, mode='='):
-    self.send('delete_by_value', [[key,value,mode],{}])
+  def delete_by_value(self, **kwargs):
+    self.send('delete_by_value', [[],kwargs])
     return recv_msg(self.client)
 
   @server_method

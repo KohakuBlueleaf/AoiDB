@@ -13,7 +13,7 @@ lock = ''
 async def wait_lock(peername):
   global lock
   while lock:
-    await asyncio.sleep(0.05)
+    await asyncio.sleep(0.00001)
 
 DB = DB_function_list = None
 async def handle_request(request,peername):
@@ -89,12 +89,14 @@ def run_server(config=''):
   elif config!='':
     config = json.loads(config)
   else:
-    config = {"database_option": {
-                "name": "",
-                "path": ""
-              },
-              "IP": "127.0.0.1",
-              "Port": 22222}
+    config = {
+      "database_option": {
+        "name": "",
+        "path": ""
+      },
+      "IP": "127.0.0.1",
+      "Port": 22222
+    }
   
   path = config['database_option']['path']
 

@@ -5,7 +5,7 @@ with open('config.json','r') as f:
   configs = load(f)
 
 commands = ''"from aoidb.server import run_server;\
-            run_server({})"'
+            run_server({})"''
 p_list = []
 for config in configs:
   config_str = dumps(config,ensure_ascii=False)
