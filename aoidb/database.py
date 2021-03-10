@@ -6,6 +6,7 @@ from ._bp_tree import BpTree as bpt
 from .cy_bp_tree import BpTree
 from ._functions import *
 
+
 sys.setrecursionlimit(10000000)
 
 
@@ -175,7 +176,6 @@ class AoiDB:
       self.all_data,
       self.column, 
       [i for i in self.index.keys()],
-      self.id_list, 
       self.idmax
     )
     with open(path if path!='.aoi' else self.path, 'wb') as f:
@@ -188,8 +188,11 @@ class AoiDB:
     with open(path, 'rb') as f:
       all_data = pickle.load(f)
     
-    self.name, self.type, self.all_data, self.column, self.index, self.id_list, self.idmax = all_data
+    self.name, self.type, self.all_data, self.column, self.index, self.idmax = all_data
+    self.id_list = BpTree(16)
+
     for data in self.all_data:
+      self.id_list[data.id] = data
       #to fit new type of Data
       now = data
       if hasattr(now, 'item'):
@@ -373,3 +376,313 @@ class AoiDB:
         new[key] = value
       
       self.save_change(new)
+
+
+class AoiDB2:
+  class Data:
+    """
+    DB中的Data物件，儲存資料的最小單位
+    """
+    def __init__(self, id:int, data):
+      self.id = id
+      self.data = data  #儲存資料
+      
+    def __str__(self):
+      length = len(self.data)
+      first = '\n┌──────────'+'┬──────────'*length+'┐\n│'
+      row1 = '        id│'
+      middle = '\n├──────────'+'┼──────────'*length+'┤\n│'
+      row2 = '{}│'.format(get_str(self.id))
+      end = '\n└──────────'+'┴──────────'*length+'┘'
+      
+      for key,value in self.data.items():
+        row1 += '{}│'.format(get_str(key))
+        row2 += '{}│'.format(get_str(value))
+      
+      return first+row1+middle+row2+end
+    
+    __repr__ = __str__
+    
+    def copy(self,node):
+      self.data = node.data
+
+    def __len__(self):
+      return len(self.data)
+
+    def __iter__(self):
+      for i in self.data:
+        yield i
+    
+    def __hash__(self):
+      return hash(f'AoiDB_Data_{self.id}')
+
+    def items(self):
+      return self.data.items()
+    
+    def keys(self):
+      return self.data.keys()
+
+    def values(self):
+      return self.data.values()
+
+    def __getitem__(self, key:str):
+      return self.data.get(key,None)
+
+    def __delitem__(self, key):
+      del self.data[key]
+      
+    def __setitem__(self, key:str, value):
+      if key not in self.data: 
+        raise KeyError('Key is not in data')
+      self.data[key] = value
+  
+  class DataSet:
+    """
+    DataSet物件 當db須回傳多筆資料時使用此物件儲存
+    """
+    def __init__(self, data):
+      self.data = list(data)
+    
+    def __str__(self):
+      out = 'DataSet('
+      for i in self.data:
+        out += str(i)
+        out += ','
+      
+      return out[:-1] + ')' 
+
+    __repr__ = __str__
+
+    def __getitem__(self,key):
+      return self.data[key]
+    
+    def __iter__(self):
+      for i in self.data:
+        yield i
+    
+    def __len__(self):
+      return len(self.data)
+    
+    def __add__(self, other):
+      return AoiDB2.DataSet(self.data + other.data)
+
+
+  def __init__(self, name=''):
+    self.name = name
+    self.path = ''
+    
+    self.column = []
+    self.types = {}
+    self.index = {}
+    self.datas = {}
+    
+    self.id_list = BpTree(16)
+    self.idmax = 0
+  
+  def __iter__(self):
+    for i in self.all_data:
+      yield i
+  
+  def show(self):
+    out = f'AoiDB_{self.name }:\n'
+    length = len(self.column)
+    spliter = '\n├──────────'+'┼──────────'*length+'┤\n│'
+    out += '┌──────────'+'┬──────────'*length+'┐\n│'
+    
+    out += '{:>10}│'.format('id')
+    
+    for i in self.column:
+      out += '{}│'.format(get_str(i))
+    
+    for i in self.id_list:
+      out += spliter
+      out += '{}│'.format(get_str(i))
+      for j in self.datas.values():
+        out += '{}│'.format(get_str(j[self.id_list[i]]))
+    
+    out += '\n└──────────'+'┴──────────'*length+'┘'
+    
+    return out
+  
+  __str__ = __repr__ = show
+  
+  def __getitem__(self, key):
+    if key in self.id_list:
+      return self.id_list[key]
+  
+  def __contains__(self, id):
+    return id in self.id_list
+
+  def save(self, path=''):
+    if path=='' and self.path=='':
+      path = self.name
+
+    if path[-4:] != '.aoi2':
+      path += '.aoi2'
+    
+    id_list = [i for i in self.id_list]
+    datas = [
+      id_list,
+      self.column, 
+      self.types, 
+      [i for i in self.index.keys()],
+      self.datas, 
+      self.idmax
+    ]
+    with open(path, 'wb') as f:
+      pickle.dump(datas, f)
+  
+  def load(self, path):
+    with open(path, 'rb') as f:
+      datas = pickle.load(f)
+    
+    id_list, self.column, self.types, index_col, self.datas, self.idmax = datas
+    self.id_list = BpTree(16)
+    for i in range(len(id_list)):
+      self.id_list[id_list[i]] = i
+
+    for i in index_col:
+      self.create_index(i)
+    self.path = path
+
+  def get_by_id(self, id):
+    index = self.id_list[id]
+    return AoiDB2.Data(id, {key: self.datas[key][index] for key in self.column})
+  
+  def get_e(self, **kwargs):
+    final = None
+    for key,value in kwargs.items():
+      if key in self.index:
+        data = set(self.index[key][value])
+      else:
+        data = set(i for i in self.datas[key] if i==value)
+
+      if final is None:
+        final = data
+      else:
+        final &= data
+
+    return AoiDB2.DataSet(self.get_by_id(i) for i in final)
+
+  def get_l(self, **kwargs):
+    final = None
+    for key,value in kwargs.items():
+      if key in self.index:
+        data = set()
+        for i,v in self.index[key].items():
+          if i>=value:
+            break
+          data |= set(v)
+      else:
+        data = self.datas[key]
+        data = set(i for i,j in self.id_list.items() if data[j]<value)
+
+      if final is None:
+        final = data
+      else:
+        final &= data
+
+    if final is None:
+      final = set()
+    return AoiDB2.DataSet(self.get_by_id(i) for i in final)
+  
+  def get_g(self, **kwargs):
+    final = None
+    for key,value in kwargs.items():
+      data = self.datas[key]
+      data = set(i for i,j in self.id_list.items() if data[j]>value)
+
+      if final is None:
+        final = data
+      else:
+        final &= data
+        
+    if final is None:
+      final = set()
+    return AoiDB2.DataSet(self.get_by_id(i) for i in final)
+  
+  def get(self, **kwargs):
+    if 'mode' in kwargs:
+      mode = kwargs['mode']
+      del kwargs['mode']
+    else:
+      mode = '='
+    
+    if 'id' in kwargs:
+      return self.get_by_id(kwargs['id'])
+    elif mode=='=':
+      return self.get_e(**kwargs)
+    elif mode=='<':
+      return self.get_l(**kwargs)
+    elif mode=='>':
+      return self.get_g(**kwargs)
+    else:
+      raise AttributeError('\'mode\' should be "=", "<", or ">"')
+      
+
+  def add_data(self, **kwargs):
+    new_id = self.idmax+1
+    self.idmax += 1
+    self.id_list[new_id] = len(self.datas[self.column[0]])
+    for name, dtype in self.types.items():
+      if name in kwargs:
+        self.datas[name].append(kwargs[name])
+      else:
+        self.datas[name].append(dtype())
+    
+    return self.get_by_id(new_id)
+  
+  def delete(self, id):
+    if id not in self.id_list:
+      raise ValueError("This id is not in this database.")
+    for i in self.id_list:
+      if i>=id:
+        self.id_list[i] = self.id_list[i]-1
+    
+    index = self.id_list[id]
+    self.id_list.delete(id)
+    for i in self.column:
+      del self.datas[i][index]
+  
+  def delete_by_value(self, key:str, value, mode='='):
+    res = self.get(key, value, mode)
+    for i in res:
+      self.delete(i)
+  
+  def change_value(self, id, **kwargs):
+    index = self.id_list[id]
+    for name, data in kwargs.items():
+      self.datas[name][index] = data
+
+  def col(self):
+    return self.col
+
+  def add_col(self, col, data_type):
+    if col not in self.types:
+      self.types[col] = type(data_type)
+      self.column.append(col)
+      self.datas[col] = [type(data_type)() for i in self.id_list]
+      pass
+  
+  def del_col(self, col):
+    del self.types[col]
+    del self.datas[col]
+    self.column.remove(col)
+    
+    if col in self.index:
+      del self.index[col]
+
+  def create_index(self, key:str):
+    self.index[key] = BpTree(16)
+    self.index[key][self.types[key]()] = []
+    index = self.index[key]
+    
+    for id, i in self.id_list.items():
+      value = self.datas[key][i]
+      if value in index:
+        index[value].append(id)
+      else:
+        index[value] = [id]
+  
+  def delete_index(self, key:str):
+    del self.index[key]

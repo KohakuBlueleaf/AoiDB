@@ -1,7 +1,7 @@
-from aoidb.database import AoiDB
+from aoidb.database import AoiDB2
 from math import log,log2,log10
 
-log_table = AoiDB('Log Table')
+log_table = AoiDB2('Log Table')
 log_table.add_col('num', int())
 log_table.add_col('ln', float())
 log_table.add_col('log', float())

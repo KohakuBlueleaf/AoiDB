@@ -6,7 +6,7 @@ from time import time,ctime
 from pickle import dumps,loads
 from traceback import format_exc
 from ._server_functions import *
-from .database import AoiDB
+from .database import AoiDB, AoiDB2
 
 
 lock = ''
@@ -95,12 +95,20 @@ def run_server(config=''):
         "path": ""
       },
       "IP": "127.0.0.1",
-      "Port": 22222
+      "Port": 22222,
+      'version': 2
     }
   
+  if 'version' in  config:
+    version = config['version']
+  else:
+    version = 1
   path = config['database_option']['path']
 
-  DB = AoiDB(config['database_option']['name'])
+  if version==1:
+    DB = AoiDB(config['database_option']['name'])
+  else:
+    DB = AoiDB2(config['database_option']['name'])
   if path:
     DB.load(path)
   DB_function_list = set(dir(DB))
