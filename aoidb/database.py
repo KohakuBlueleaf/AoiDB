@@ -104,14 +104,14 @@ class AoiDB:
     
     self.all_data = []
     
-    self.column = []
+    self.__column = []
     self.type = {}
-    self.index = {}
+    self.__index = {}
     self.cmp = {}
     self.command_list = []
     
-    self.id_list = BpTree(16)
-    self.idmax = 0
+    self.__id_list = BpTree(16)
+    self.__idmax = 0
   
   def __iter__(self):
     for i in self.all_data:
@@ -119,18 +119,18 @@ class AoiDB:
   
   def show(self, sort_by=''):
     out = f'AoiDB_{self.name }:\n'
-    length = len(self.column)
+    length = len(self.__column)
     spliter = '\n├──────────'+'┼──────────'*length+'┤\n│'
     out += '┌──────────'+'┬──────────'*length+'┐\n│'
     
     out += '{:>10}│'.format('id')
     
-    for i in self.column:
+    for i in self.__column:
       out += '{}│'.format(get_str(i))
     
     if sort_by:
-      if sort_by in self.index:
-        res = sum([i for i in self.index[sort_by]],[])
+      if sort_by in self.__index:
+        res = sum([i for i in self.__index[sort_by]],[])
       else:
         if sort_by in self.cmp:
           key = lambda i:self.cmp[sort_by](i[sort_by])
@@ -141,13 +141,13 @@ class AoiDB:
       for i in res:
         out += spliter
         out += '{}│'.format(get_str(i))
-        for j in self.column:
-          out += '{}│'.format(get_str(self.id_list[i][j]))
+        for j in self.__column:
+          out += '{}│'.format(get_str(self.__id_list[i][j]))
     else:
       for i in self.all_data:
         out += spliter
         out += '{}│'.format(get_str(i.id))
-        for j in self.column:
+        for j in self.__column:
           out += '{}│'.format(get_str(i[j]))
     
     out += '\n└──────────'+'┴──────────'*length+'┘'
@@ -157,11 +157,11 @@ class AoiDB:
   __str__ = show
   
   def __getitem__(self, key):
-    if key in self.id_list:
-      return self.id_list[key]
+    if key in self.__id_list:
+      return self.__id_list[key]
   
   def __contains__(self, id):
-    return id in self.id_list
+    return id in self.__id_list
 
   def save(self, path=''):
     if path=='' and self.path=='':
@@ -174,9 +174,9 @@ class AoiDB:
       self.name, 
       self.type,
       self.all_data,
-      self.column, 
-      [i for i in self.index.keys()],
-      self.idmax
+      self.__column, 
+      [i for i in self.__index.keys()],
+      self.__idmax
     )
     with open(path if path!='.aoi' else self.path, 'wb') as f:
       pickle.dump(all_data, f)
@@ -188,11 +188,11 @@ class AoiDB:
     with open(path, 'rb') as f:
       all_data = pickle.load(f)
     
-    self.name, self.type, self.all_data, self.column, self.index, self.idmax = all_data
-    self.id_list = BpTree(16)
+    self.name, self.type, self.all_data, self.__column, self.__index, self.__idmax = all_data
+    self.__id_list = BpTree(16)
 
     for data in self.all_data:
-      self.id_list[data.id] = data
+      self.__id_list[data.id] = data
       #to fit new type of Data
       now = data
       if hasattr(now, 'item'):
@@ -203,30 +203,30 @@ class AoiDB:
         new.data = now.data
       
     #to fit new type of index
-    if type(self.index)==dict:
-      for col, bptree in self.index.items():
+    if type(self.__index)==dict:
+      for col, bptree in self.__index.items():
         if not hasattr(bptree, 'delete'):
           new_tree = BpTree(16)
           for key, value in bptree.items():
             new_tree[key] = value if type(value)==int else value.id
-          self.index[col] = new_tree
+          self.__index[col] = new_tree
     else:
-      index_col = self.index
-      self.index = {}
+      index_col = self.__index
+      self.__index = {}
       for col in index_col:
         new_index = BpTree(16)
         for i in self.all_data:
           new_index[i[col]] = new_index.get(i[col], []).append(i.id)
-        self.index[col] = new_index
+        self.__index[col] = new_index
 
   def get_by_id(self, id):
-    return self.id_list[id]
+    return self.__id_list[id]
   
   def get_e(self, **kwargs):
     final = None
     for key,target in kwargs.items():
-      if key in self.index:
-        now = set(self.id_list[i] for i in self.index[key].get(target,[]))
+      if key in self.__index:
+        now = set(self.__id_list[i] for i in self.__index[key].get(target,[]))
       else:
         now = set([i for i in self.all_data if i[key]==target])
       if final is None:
@@ -234,7 +234,7 @@ class AoiDB:
       else:
         final &= now
     
-    return self.DataSet(final)
+    return self.__dataset(final)
   
   def get_l(self, **kwargs):
     final = None
@@ -244,7 +244,7 @@ class AoiDB:
         final = now
       else:
         final &= now
-    return self.DataSet(final)
+    return self.__dataset(final)
   
   def get_g(self, **kwargs):
     final = None
@@ -254,7 +254,7 @@ class AoiDB:
         final = now
       else:
         final &= now
-    return self.DataSet(final)
+    return self.__dataset(final)
   
   def get(self, **kwargs):
     if 'mode' in kwargs:
@@ -276,36 +276,36 @@ class AoiDB:
       
 
   def add_data(self, **kwargs):
-    new = self.Data(self.idmax)
+    new = self.Data(self.__idmax)
     
     self.all_data.append(new)
-    self.id_list[self.idmax] = new
-    self.idmax += 1
+    self.__id_list[self.__idmax] = new
+    self.__idmax += 1
     
     for key,value in kwargs.items():
       new.data[key] = value
       
-    for i in self.column:
+    for i in self.__column:
       if i not in new.data:
         new.data[i] = self.type[i]()
         
-      if i in self.index:
-        if new.data[i] in self.index[i]:
-          self.index[i][new.data[i]].append(new.id)
+      if i in self.__index:
+        if new.data[i] in self.__index[i]:
+          self.__index[i][new.data[i]].append(new.id)
         else:
-          self.index[i][new.data[i]] = [new.id]
+          self.__index[i][new.data[i]] = [new.id]
     return new
   
   def delete(self, node:Data):
-    node = self.id_list[node.id]
+    node = self.__id_list[node.id]
     self.all_data.remove(node)
     
-    for key,tree in self.index.items():
+    for key,tree in self.__index.items():
       tree[node[key]].remove(node.id)
       if tree[node[key]] == []:
         tree.delete(node[key])
     
-    self.id_list.delete(node.id)
+    self.__id_list.delete(node.id)
   
   def delete_by_value(self, key:str, value, mode='='):
     res = self.get(key, value, mode)
@@ -313,17 +313,17 @@ class AoiDB:
       self.delete(i)
   
   def change_value(self, id, **kwargs):
-    target = self.id_list[id]
+    target = self.__id_list[id]
     for key,value in kwargs.items():
-      if key in self.index:
-        self.index[key][target[key]].remove(target.id)
+      if key in self.__index:
+        self.__index[key][target[key]].remove(target.id)
       target[key] = value
 
-      if key in self.index:
-        if value in self.index[key]:
-          self.index[key][value].append(target.id)
+      if key in self.__index:
+        if value in self.__index[key]:
+          self.__index[key][value].append(target.id)
         else:
-          self.index[key][value] = [target.id]
+          self.__index[key][value] = [target.id]
     self.command_list.append([id,kwargs])
 
   def col(self):
@@ -332,26 +332,26 @@ class AoiDB:
   def add_col(self, col, data_type):
     if col not in self.type:
       self.type[col] = type(data_type)
-      self.column.append(col)
+      self.__column.append(col)
       
       for i in self.all_data:
         i.data[col] = type(data_type)()
   
   def del_col(self, col):
     del self.type[col]
-    self.column.remove(col)
+    self.__column.remove(col)
     
     for i in self.all_data:
       del i.data[col]
     
-    if col in self.index:
-      del self.index[col]
+    if col in self.__index:
+      del self.__index[col]
   
 
   def create_index(self, key:str):
-    self.index[key] = BpTree(16)
-    self.index[key][self.type[key]()] = []
-    index = self.index[key]
+    self.__index[key] = BpTree(16)
+    self.__index[key][self.type[key]()] = []
+    index = self.__index[key]
     
     for i in self.all_data:
       value = i[key]
@@ -361,7 +361,7 @@ class AoiDB:
         index[value] = [i.id]
   
   def delete_index(self, key:str):
-    del self.index[key]
+    del self.__index[key]
   
   def load_by_temp(self, path):
     with open(path,'rb') as f:
@@ -471,13 +471,14 @@ class AoiDB2:
     self.name = name
     self.path = ''
     
-    self.column = []
-    self.types = {}
-    self.index = {}
-    self.datas = {}
+    self.__column = []
+    self.__types = {}
+    self.__index = {}
+    self.__datas = {}
+    self.__multi = {}
     
-    self.id_list = BpTree(16)
-    self.idmax = 0
+    self.__id_list = BpTree(16)
+    self.__idmax = 0
   
   def __iter__(self):
     for i in self.all_data:
@@ -485,20 +486,20 @@ class AoiDB2:
   
   def show(self):
     out = f'AoiDB_{self.name }:\n'
-    length = len(self.column)
+    length = len(self.__column)
     spliter = '\n├──────────'+'┼──────────'*length+'┤\n│'
     out += '┌──────────'+'┬──────────'*length+'┐\n│'
     
     out += '{:>10}│'.format('id')
     
-    for i in self.column:
+    for i in self.__column:
       out += '{}│'.format(get_str(i))
     
-    for i in self.id_list:
+    for i in self.__id_list:
       out += spliter
       out += '{}│'.format(get_str(i))
-      for j in self.datas.values():
-        out += '{}│'.format(get_str(j[self.id_list[i]]))
+      for j in self.__datas.values():
+        out += '{}│'.format(get_str(j[self.__id_list[i]]))
     
     out += '\n└──────────'+'┴──────────'*length+'┘'
     
@@ -507,11 +508,11 @@ class AoiDB2:
   __str__ = __repr__ = show
   
   def __getitem__(self, key):
-    if key in self.id_list:
-      return self.id_list[key]
+    if key in self.__id_list:
+      return self.__id_list[key]
   
   def __contains__(self, id):
-    return id in self.id_list
+    return id in self.__id_list
 
   def save(self, path=''):
     if path=='' and self.path=='':
@@ -520,14 +521,15 @@ class AoiDB2:
     if path[-4:] != '.aoi2':
       path += '.aoi2'
     
-    id_list = [i for i in self.id_list]
+    id_list = [i for i in self.__id_list]
     datas = [
       id_list,
-      self.column, 
-      self.types, 
-      [i for i in self.index.keys()],
-      self.datas, 
-      self.idmax
+      self.__column, 
+      self.__types, 
+      self.__multi,
+      [i for i in self.__index.keys()],
+      self.__datas, 
+      self.__idmax
     ]
     with open(path, 'wb') as f:
       pickle.dump(datas, f)
@@ -536,26 +538,45 @@ class AoiDB2:
     with open(path, 'rb') as f:
       datas = pickle.load(f)
     
-    id_list, self.column, self.types, index_col, self.datas, self.idmax = datas
-    self.id_list = BpTree(16)
+    id_list, self.__column, self.__types, self.__multi, index_col, self.__datas, self.__idmax = datas
+    self.__id_list = BpTree(16)
     for i in range(len(id_list)):
-      self.id_list[id_list[i]] = i
+      self.__id_list[id_list[i]] = i
 
     for i in index_col:
-      self.create_index(i)
+      if self.__multi[i]:
+        self.__index[i] = BpTree(16)
+        for id, index in self.__id_list.items():
+          data = self.__datas[i][index]
+          for value in data:
+            if value in self.__index[i]:
+              self.__index[i][value].append(id)
+            else:
+              self.__index[i][value] = [id]
+      else:
+        self.create_index(i)
     self.path = path
 
   def get_by_id(self, id):
-    index = self.id_list[id]
-    return AoiDB2.Data(id, {key: self.datas[key][index] for key in self.column})
+    index = self.__id_list[id]
+    if index is None:
+      raise ValueError('object is not exist')
+    return AoiDB2.Data(id, {key: self.__datas[key][index] for key in self.__column})
   
   def get_e(self, **kwargs):
     final = None
     for key,value in kwargs.items():
-      if key in self.index:
-        data = set(self.index[key][value])
+      if key in self.__index:
+        if self.__multi[key] and type(value)==list:
+          data = set(self.__index[key][value[0]])
+          for v in value[1:]:
+            data &= set(self.__index[key][v])
+            
+        else:
+          data = set(self.__index[key][value])
       else:
-        data = set(i for i in self.datas[key] if i==value)
+        data = self.__datas[key]
+        data = set(i for i,j in self.__id_list.items() if data[j]==value)
 
       if final is None:
         final = data
@@ -567,15 +588,17 @@ class AoiDB2:
   def get_l(self, **kwargs):
     final = None
     for key,value in kwargs.items():
-      if key in self.index:
+      if self.__multi[key]:
+        raise TypeError("A multi-value column cannot use '<' '>' search mode.")
+      if key in self.__index:
         data = set()
-        for i,v in self.index[key].items():
+        for i,v in self.__index[key].items():
           if i>=value:
             break
           data |= set(v)
       else:
-        data = self.datas[key]
-        data = set(i for i,j in self.id_list.items() if data[j]<value)
+        data = self.__datas[key]
+        data = set(i for i,j in self.__id_list.items() if data[j]<value)
 
       if final is None:
         final = data
@@ -589,8 +612,10 @@ class AoiDB2:
   def get_g(self, **kwargs):
     final = None
     for key,value in kwargs.items():
-      data = self.datas[key]
-      data = set(i for i,j in self.id_list.items() if data[j]>value)
+      if self.__multi[key]:
+        raise TypeError("A multi-value column cannot use '<' '>' search mode.")
+      data = self.__datas[key]
+      data = set(i for i,j in self.__id_list.items() if data[j]>value)
 
       if final is None:
         final = data
@@ -608,41 +633,73 @@ class AoiDB2:
     else:
       mode = '='
     
+    #print(kwargs)
     if 'id' in kwargs:
+    #  print(1)
       return self.get_by_id(kwargs['id'])
     elif mode=='=':
+    #  print(2)
       return self.get_e(**kwargs)
     elif mode=='<':
+    #  print(3)
       return self.get_l(**kwargs)
     elif mode=='>':
+    #  print(4)
       return self.get_g(**kwargs)
     else:
       raise AttributeError('\'mode\' should be "=", "<", or ">"')
       
 
   def add_data(self, **kwargs):
-    new_id = self.idmax+1
-    self.idmax += 1
-    self.id_list[new_id] = len(self.datas[self.column[0]])
-    for name, dtype in self.types.items():
-      if name in kwargs:
-        self.datas[name].append(kwargs[name])
+    new_id = self.__idmax+1
+    self.__idmax += 1
+    self.__id_list[new_id] = len(self.__datas[self.__column[0]])
+    for name, dtype in self.__types.items():
+      if self.__multi[name]:
+        if name in kwargs:
+          self.__datas[name].append(kwargs[name])
+        else:
+          self.__datas[name].append([dtype()])
+
+        if name in kwargs:
+          for i in kwargs[name]:
+            if type(i) != self.__types[name]:
+              raise TypeError(f'The type of {name} should be {self.__types[name]}')
+            else:
+              if i in self.__index[name]:
+                self.__index[name][i].append(new_id)
+              else:
+                self.__index[name][i] = [new_id]
+        else:
+          self.__index[name][dtype()].append(new_id)
+
       else:
-        self.datas[name].append(dtype())
-    
+        if name in kwargs:
+          if type(kwargs[name]) != self.__types[name]:
+            raise TypeError(f'The type of {name} should be {self.__types[name]}')
+          self.__datas[name].append(kwargs[name])
+        else:
+          self.__datas[name].append(dtype())
+        
+        if name in self.__index:
+          if self.__datas[name][-1] in self.__index[name]:
+            self.__index[name][self.__datas[name][-1]].append(new_id)
+          else:
+            self.__index[name][self.__datas[name][-1]] = [new_id]
+
     return self.get_by_id(new_id)
   
   def delete(self, id):
-    if id not in self.id_list:
+    if id not in self.__id_list:
       raise ValueError("This id is not in this database.")
-    for i in self.id_list:
+    for i in self.__id_list:
       if i>=id:
-        self.id_list[i] = self.id_list[i]-1
+        self.__id_list[i] = self.__id_list[i]-1
     
-    index = self.id_list[id]
-    self.id_list.delete(id)
-    for i in self.column:
-      del self.datas[i][index]
+    index = self.__id_list[id]
+    self.__id_list.delete(id)
+    for i in self.__column:
+      del self.__datas[i][index]
   
   def delete_by_value(self, key:str, value, mode='='):
     res = self.get(key, value, mode)
@@ -650,39 +707,77 @@ class AoiDB2:
       self.delete(i)
   
   def change_value(self, id, **kwargs):
-    index = self.id_list[id]
+    index = self.__id_list[id]
     for name, data in kwargs.items():
-      self.datas[name][index] = data
+      if self.__multi[name]:
+        old = set(self.__datas[name][index])
+        new = set(data)
+        diff = old^new
+        delete = diff&old
+        add = diff&new
+
+        for i in delete:
+          self.__index[name][i].remove(id)
+        for i in add:
+          if type(i) != self.__types[name]:
+            raise TypeError(f'The type of {name} should be {self.__types[name]}')
+          if i in self.__index[name]:
+            self.__index[name][i].append(id)
+          else:
+            self.__index[name][i] = [id]
+        self.__datas[name][index] = data
+        
+      else:
+        if type(data) != self.__types[name]:
+          raise TypeError(f'The type of {name} should be {self.__types[name]}')
+        if name in self.__index:
+          old = self.__datas[name][index]
+          self.__index[name][old].remove(id)
+          self.__index[name][data].append(id)
+        self.__datas[name][index] = data
 
   def col(self):
-    return self.col
+    return self.__column
 
-  def add_col(self, col, data_type):
-    if col not in self.types:
-      self.types[col] = type(data_type)
-      self.column.append(col)
-      self.datas[col] = [type(data_type)() for i in self.id_list]
-      pass
+  def add_col(self, col, data_type, multi_value=False):
+    if col in self.__types:
+      return 
+
+    if multi_value == True:
+      self.__types[col] = type(data_type)
+      self.__multi[col] = True
+      self.__column.append(col)
+      self.__datas[col] = [[type(data_type)()] for _ in self.__id_list]
+      self.__index[col] = BpTree(16)
+      self.__index[col][type(data_type)()] = [i for i in self.__id_list]
+    else:
+      self.__types[col] = type(data_type)
+      self.__multi[col] = False
+      self.__column.append(col)
+      self.__datas[col] = [type(data_type)() for _ in self.__id_list]
   
   def del_col(self, col):
-    del self.types[col]
-    del self.datas[col]
-    self.column.remove(col)
+    del self.__types[col]
+    del self.__datas[col]
+    del self.__multi[col]
+    self.__column.remove(col)
     
-    if col in self.index:
-      del self.index[col]
+    if col in self.__index:
+      del self.__index[col]
 
   def create_index(self, key:str):
-    self.index[key] = BpTree(16)
-    self.index[key][self.types[key]()] = []
-    index = self.index[key]
+    if key in self.__index:
+      return 
+    self.__index[key] = BpTree(16)
+    self.__index[key][self.__types[key]()] = []
+    index = self.__index[key]
     
-    for id, i in self.id_list.items():
-      value = self.datas[key][i]
+    for id, i in self.__id_list.items():
+      value = self.__datas[key][i]
       if value in index:
         index[value].append(id)
       else:
         index[value] = [id]
-  
+
   def delete_index(self, key:str):
-    del self.index[key]
+    del self.__index[key]
