@@ -733,7 +733,10 @@ class AoiDB2:
         if name in self.__index:
           old = self.__datas[name][index]
           self.__index[name][old].remove(id)
-          self.__index[name][data].append(id)
+          if self.__index[name][old]:
+            self.__index[name][data].append(id)
+          else:
+            self.__index[name][data] = [id]
         self.__datas[name][index] = data
 
   def col(self):
