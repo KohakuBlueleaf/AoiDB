@@ -573,7 +573,10 @@ class AoiDB2:
             data &= set(self.__index[key][v])
             
         else:
-          data = set(self.__index[key][value])
+          if value in self.__index[key]:
+            data = set(self.__index[key][value])
+          else:
+            data = set()
       else:
         data = self.__datas[key]
         data = set(i for i,j in self.__id_list.items() if data[j]==value)
@@ -733,7 +736,10 @@ class AoiDB2:
         if name in self.__index:
           old = self.__datas[name][index]
           self.__index[name][old].remove(id)
-          self.__index[name][data].append(id)
+          if self.__index[name][data]:
+            self.__index[name][data].append(id)
+          else:
+            self.__index[name][data] = [id]
         self.__datas[name][index] = data
 
   def col(self):

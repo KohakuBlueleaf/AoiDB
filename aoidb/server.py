@@ -10,10 +10,10 @@ from .database import AoiDB, AoiDB2
 
 
 lock = ''
-async def wait_lock(peername):
+async def wait_lock():
   global lock
   while lock:
-    await asyncio.sleep(0.00001)
+    await asyncio.sleep(0.001)
 
 DB = DB_function_list = None
 async def handle_request(request,peername):
@@ -28,7 +28,7 @@ async def handle_request(request,peername):
       return [0, None]
     
     if lock!=peername:
-      await wait_lock(peername)
+      await wait_lock()
     
     if request=='lock':
       lock = peername

@@ -2,12 +2,12 @@ import os,sys
 import shutil
 
 from argparse import ArgumentParser
-from aoidb.database import AoiDB
+from aoidb.database import AoiDB,AoiDB2
 from json import dump
 
 parser = ArgumentParser()
 parser.add_argument('command',
-                    help='Run Your Server(Need config.json existed)',
+                    help='new: create new project\nrun: Run Your Server(Need config.json existed)',
                     type=str,default='')
 parser.add_argument('project_name',
                     help='The name of your project',
@@ -15,6 +15,9 @@ parser.add_argument('project_name',
 parser.add_argument('-N','--name',
                     help='The name of your database(Not project name)',
                     type=str,default='')
+parser.add_argument('-V','--version',
+                    help='The version of your database(1 or 2)',
+                    type=int,default=2)
 
 def new(args):
   p_name = args.project_name
@@ -38,18 +41,26 @@ def new(args):
     if exsited:
       shutil.rmtree(run_path)
     shutil.copytree(file_path,run_path)
+    os.remove(run_path+'/database/empty.txt')
     
-    new_DB = AoiDB(d_name)
-    new_DB.save(run_path+f'/database/{p_name}')
-
+    if args.version==1:
+      new_DB = AoiDB(d_name)
+      new_DB.save(run_path+f'/database/{p_name}')
+    elif args.version==2:
+      new_DB = AoiDB2(d_name)
+      new_DB.save(run_path+f'/database/{p_name}')
+    else:
+      print('Version should be 1 or 2!')
+      return 
     config = [{}]
     config[0]["database_option"]={"name": d_name,
-                                  "path": run_path+f'/database/{p_name}.aoi'}
+                                  "path": run_path+f'/database/{p_name}.aoi{"" if args.version==1 else 2}'}
     config[0]["IP"] = "127.0.0.1"
     config[0]["Port"] = 38738
+    config[0]['version'] = args.version
 
     with open(run_path+"/config.json",'w',encoding='utf-8') as f:
-      dump(config,f)
+      dump(config,f,indent=2)
   else:
     return
   print('Done!')

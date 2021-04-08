@@ -1,27 +1,42 @@
 import struct
 from pickle import dumps,loads
+import re
 
-def log_error(err):
-  errors = err.split('\n\n')[0].strip().split('\n')
-  if errors[2].count('getattr'):
-    line = 3
+def log_error(err, ignore_file_name=[]):
+  all_mes = re.findall(r'File.*\n\s+.*',err)
+  err_class= re.findall(r'.+: .+',err)
+  if err_class:
+    err_class, err_message  = err_class.split(': ',1)
   else:
-    line = 1
+    err_class = err.strip().split('\n')[-1]
+    err_message = ''
 
-  err_file, err_line, err_pos = errors[line].strip().split(', ')
-  err_program = errors[line+1].strip()
-  err_cls, err_mes = errors[-1].split(': ',1)
-  print(
-    '====Error Occured====\n',
-    'Error File   : {}\n'.format(err_file.split()[-1]),
-    'Error Line   : {}\n'.format(err_line.split()[-1]),
-    'Error Pos    : {}\n'.format(err_pos.split()[-1]),
-    'Error program: {}\n'.format(err_program),
-    'Error Class  : {}\n'.format(err_cls),
-    'Error Message: {}\n'.format(err_mes),
-    '=====================',
-    sep=''
-  )
+  output = '========Error Occured========\n'
+  before_file = ''
+
+  for i in all_mes:
+    state, program = i.split('\n')
+    err_file, err_line, err_pos = state.split(', ')
+
+    for i in ignore_file_name:
+      if err_file.find(i)!=-1:
+        break
+    else:
+      if before_file:
+        output += '-----------------------------\n'
+      if err_file!=before_file:
+        output += f'Error File   : {err_file[5:]}\n'
+        before_file = err_file
+      
+      output += f'Error Line   : {err_line[5:]}\n'
+      output += f'Error Pos    : {err_pos[3:]}\n'
+      output += f'Error program: {program.strip()}\n'
+  
+  output += '=============================\n'
+  output += f'Error Class  : {err_class}\n'
+  output += f'Error Message: {err_message}\n'
+  output += '============================='
+  print(output)
 
 def recv_msg(sock):
   raw_msglen = recvall(sock, 4)
