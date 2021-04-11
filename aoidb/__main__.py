@@ -41,7 +41,6 @@ def new(args):
   else:
     d_name = args.name
   
-  file_path = os.path.split(os.path.abspath(__file__))[0]+'/template/project'
   run_path = os.getcwd()+f'/{p_name}'
   
   check = 'Y'
@@ -53,29 +52,44 @@ def new(args):
   if check.upper()=='Y':
     if exsited:
       shutil.rmtree(run_path)
-    shutil.copytree(file_path,run_path)
-    os.remove(run_path+'/database/empty.txt')
-    
-    if args.version==1:
-      new_DB = AoiDB(d_name)
-      new_DB.save(run_path+f'/database/{p_name}')
-    elif args.version==2:
-      new_DB = AoiDB2(d_name)
-      new_DB.save(run_path+f'/database/{p_name}')
-    else:
-      print('Version should be 1 or 2!')
-      return 
-    config = [{}]
-    config[0]["database_option"]={
-      "name": d_name,
-      "path": run_path+f'/database/{p_name}.aoi{"" if args.version==1 else 2}'
-    }
-    config[0]["IP"] = "127.0.0.1"
-    config[0]["Port"] = 38738
-    config[0]['version'] = args.version
 
-    with open(run_path+"/config.json",'w',encoding='utf-8') as f:
-      dump(config,f,indent=2)
+    if args.interface:
+      file_path = os.path.split(os.path.abspath(__file__))[0]+'/template/interface'
+      shutil.copytree(file_path, run_path)
+      config = {
+        "name": p_name,
+        "ip": "127.0.0.1",
+        "port": 12345,
+        "path": run_path,
+        "configs": {}
+      }
+      with open(run_path+"/config.json",'w',encoding='utf-8') as f:
+        dump(config, f, indent=2)
+    else:
+      file_path = os.path.split(os.path.abspath(__file__))[0]+'/template/project'
+      shutil.copytree(file_path,run_path)
+      os.remove(run_path+'/database/empty.txt')
+    
+      if args.version==1:
+        new_DB = AoiDB(d_name)
+        new_DB.save(run_path+f'/database/{p_name}')
+      elif args.version==2:
+        new_DB = AoiDB2(d_name)
+        new_DB.save(run_path+f'/database/{p_name}')
+      else:
+        print('Version should be 1 or 2!')
+        return 
+      config = [{}]
+      config[0]["database_option"]={
+        "name": d_name,
+        "path": run_path+f'/database/{p_name}.aoi{"" if args.version==1 else 2}'
+      }
+      config[0]["IP"] = "127.0.0.1"
+      config[0]["Port"] = 38738
+      config[0]['version'] = args.version
+
+      with open(run_path+"/config.json",'w',encoding='utf-8') as f:
+        dump(config,f,indent=2)
   else:
     return
   print('Done!')

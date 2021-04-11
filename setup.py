@@ -6,7 +6,13 @@ datafiles = []
 for path, dirs, files in os.walk('aoidb\\template'):
   datafiles.append((path, [path+'/'+i for i in files]))
 
-print(datafiles)
+print()
+for i,j in datafiles:
+  print(i)
+  for k in j:
+    print(f'  {k.lstrip(i)}')
+print()
+
 setuptools.setup(
   name = 'aoi_database',
   packages = ['aoidb'],
