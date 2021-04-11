@@ -110,14 +110,23 @@ def run_server(config=''):
   else:
     DB = AoiDB2(config['database_option']['name'])
   if path:
-    DB.load(path)
+    try:
+      DB.load(path)
+    except FileNotFoundError:
+      pass
   DB_function_list = set(dir(DB))
 
   IP, Port = config['IP'], config['Port']
   print(f'{DB.name}: run on {IP}:{Port}')
+
   loop = asyncio.get_event_loop()
   loop.create_task(asyncio.start_server(handle_client, IP, Port))
-  loop.run_forever()
+
+  
+  try:
+    loop.run_forever()
+  except KeyboardInterrupt:
+    loop.stop()
 
 def save_config(DB):
   if not DB.path:

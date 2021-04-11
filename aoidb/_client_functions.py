@@ -1,5 +1,6 @@
 import struct
 from pickle import dumps,loads
+import asyncio
 import re
 
 def log_error(err, ignore_file_name=[]):
@@ -58,3 +59,28 @@ def send_with_len(sock, data):
   data = dumps(data)
   data = struct.pack('>I', len(data)) + data
   sock.sendall(data)
+
+
+async def a_send(writer, data):
+  data = dumps(data)
+  data = struct.pack('>I', len(data)) + data
+  writer.write(data)
+
+async def a_recv_all(reader, n):
+  # Helper function to recv n bytes or return None if EOF is hit
+  data = b''
+  while len(data) < n:
+    packet = (await reader.read(n - len(data)))
+    if not packet:
+      return None
+    data += packet
+  return data
+
+async def a_recv(reader):
+  raw_msglen = (await a_recv_all(reader, 4))
+  if not raw_msglen: 
+    return None
+  
+  msglen = struct.unpack('>I', raw_msglen)[0]
+  data = (await a_recv_all(reader, msglen))
+  return loads(data)

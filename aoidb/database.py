@@ -164,12 +164,16 @@ class AoiDB:
     return id in self.__id_list
 
   def save(self, path=''):
-    if path=='' and self.path=='':
-      path = self.name
+    if path=='':
+      if self.path=='':
+        path = self.name
+      else:
+        path = self.path
 
     if path[-4:]!='.aoi':
       path+='.aoi'
       
+    self.path = path
     all_data = (
       self.name, 
       self.type,
@@ -181,9 +185,11 @@ class AoiDB:
     with open(path if path!='.aoi' else self.path, 'wb') as f:
       pickle.dump(all_data, f)
   
-  def load(self, path):
+  def load(self, path=''):
     if not self.path:
       self.path = path
+    if not path:
+      path = self.path
     
     with open(path, 'rb') as f:
       all_data = pickle.load(f)
@@ -515,11 +521,14 @@ class AoiDB2:
     return id in self.__id_list
 
   def save(self, path=''):
-    if path=='' and self.path=='':
-      path = self.name
+    if path=='':
+      if self.path=='':
+        path = self.name
+      else:
+        path = self.path
 
-    if path[-4:] != '.aoi2':
-      path += '.aoi2'
+    if path[-4:] != 'aoi2':
+      path += 'aoi2'
     
     id_list = [i for i in self.__id_list]
     datas = [
@@ -535,6 +544,11 @@ class AoiDB2:
       pickle.dump(datas, f)
   
   def load(self, path):
+    if not self.path:
+      self.path = path
+    if not path:
+      path = self.path
+      
     with open(path, 'rb') as f:
       datas = pickle.load(f)
     

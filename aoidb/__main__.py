@@ -6,18 +6,31 @@ from aoidb.database import AoiDB,AoiDB2
 from json import dump
 
 parser = ArgumentParser()
-parser.add_argument('command',
-                    help='new: create new project\nrun: Run Your Server(Need config.json existed)',
-                    type=str,default='')
-parser.add_argument('project_name',
-                    help='The name of your project',
-                    type=str,default='Unnamed')
-parser.add_argument('-N','--name',
-                    help='The name of your database(Not project name)',
-                    type=str,default='')
-parser.add_argument('-V','--version',
-                    help='The version of your database(1 or 2)',
-                    type=int,default=2)
+parser.add_argument(
+  'command',
+  help='new: create new project',
+  type=str, default=''
+)
+parser.add_argument(
+  'project_name',
+  help='The name of your project',
+  type=str, default='Unnamed'
+)
+parser.add_argument(
+  '-N','--name',
+  help='The name of your database(Not project name)',
+  type=str, default=''
+)
+parser.add_argument(
+  '-V','--version',
+  help='The version of your database(1 or 2)',
+  type=int, default=2
+)
+parser.add_argument(
+  '-I','--interface',
+  help='create a interface server(with \'new\' command).',
+  action='store_true', default=False
+)
 
 def new(args):
   p_name = args.project_name
@@ -53,8 +66,10 @@ def new(args):
       print('Version should be 1 or 2!')
       return 
     config = [{}]
-    config[0]["database_option"]={"name": d_name,
-                                  "path": run_path+f'/database/{p_name}.aoi{"" if args.version==1 else 2}'}
+    config[0]["database_option"]={
+      "name": d_name,
+      "path": run_path+f'/database/{p_name}.aoi{"" if args.version==1 else 2}'
+    }
     config[0]["IP"] = "127.0.0.1"
     config[0]["Port"] = 38738
     config[0]['version'] = args.version
