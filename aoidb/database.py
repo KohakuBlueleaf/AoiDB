@@ -487,8 +487,8 @@ class AoiDB2:
     self.__idmax = 0
   
   def __iter__(self):
-    for i in self.all_data:
-      yield i
+    for i in self.__id_list.values():
+      yield AoiDB2.Data(id, {key: self.__datas[key][i] for key in self.__column})
   
   def show(self):
     out = f'AoiDB_{self.name }:\n'
