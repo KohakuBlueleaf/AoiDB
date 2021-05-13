@@ -574,7 +574,7 @@ class AoiDB2:
   def get_by_id(self, id):
     index = self.__id_list[id]
     if index is None:
-      raise ValueError('object is not exist')
+      return None
     return AoiDB2.Data(id, {key: self.__datas[key][index] for key in self.__column})
   
   def get_e(self, **kwargs):
@@ -710,13 +710,18 @@ class AoiDB2:
     if id not in self.__id_list:
       raise ValueError("This id is not in this database.")
     for i in self.__id_list:
-      if i>=id:
+      if i>id:
         self.__id_list[i] = self.__id_list[i]-1
     
     index = self.__id_list[id]
     self.__id_list.delete(id)
+    for i, tree in self.__index:
+      tree[self.__datas[i][index]].remove(id)
+      if tree[self.__datas[i][index]] == []:
+        del tree[self.__datas[i][index]]
     for i in self.__column:
       del self.__datas[i][index]
+
   
   def delete_by_value(self, key:str, value, mode='='):
     res = self.get(key, value, mode)

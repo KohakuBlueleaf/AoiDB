@@ -2,14 +2,15 @@ import struct
 from pickle import loads,dumps
 import re
 
+
 def log_error(err, ignore_file_name=[]):
   all_mes = re.findall(r'File.*\n\s+.*',err)
-  err_class= re.findall(r'.+: .+',err)
-  if err_class:
-    err_class, err_message  = err_class[0].split(': ',1)
+  err_mes = re.findall(r'.+: .+',err)[0]
+  if err_mes.find(": ")!=-1:
+    err_class, err_message = err_mes.split(": ",1)
   else:
-    err_class = err.strip().split('\n')[-1]
-    err_message = ''
+    err_class = ''
+    err_message = err_mes
 
   output = '========Error Occured========\n'
   before_file = ''
@@ -36,7 +37,7 @@ def log_error(err, ignore_file_name=[]):
   output += f'Error Class  : {err_class}\n'
   output += f'Error Message: {err_message}\n'
   output += '============================='
-  return output
+  print(output)
 
 async def send(writer, data):
   data = dumps(data)
